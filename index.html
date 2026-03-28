@@ -60,6 +60,22 @@ body{font-family:system-ui,sans-serif;background:#f2ede4;color:#2a2318;min-heigh
 .swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .1s}
 .swatch.sel{border-color:#1e1a14;transform:scale(1.18)}
 .info-box{background:#e8f4fb;border:1px solid #aad4ec;border-radius:8px;padding:10px 12px;font-size:11px;color:#1a5276;line-height:1.5;margin-bottom:14px}
+.chip-edit{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:11px;padding:0 0 0 4px;line-height:1;transition:color .15s}
+.chip-edit:hover{color:rgba(255,255,255,.9)}
+.user-list-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #ede8de}
+.user-list-item:last-child{border-bottom:none}
+.user-list-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.user-list-name{flex:1;font-size:14px;font-weight:500}
+.user-list-btn{padding:4px 10px;border-radius:6px;border:1.5px solid #ddd5c4;background:#f8f4ee;color:#2a2318;font-size:12px;cursor:pointer;font-family:inherit;transition:background .12s}
+.user-list-btn:hover{background:#ede8de}
+.user-list-btn.danger{border-color:#e8b4b0;background:#fdecea;color:#c0392b}
+.user-list-btn.danger:hover{background:#f5c6c2}
+.modal-tabs{display:flex;gap:0;margin-bottom:18px;border-bottom:2px solid #ede8de}
+.modal-tab{padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;transition:color .15s}
+.modal-tab.active{color:#1e1a14;border-bottom-color:#1e1a14}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.warn-box{background:#fdecea;border:1px solid #e8b4b0;border-radius:8px;padding:9px 12px;font-size:11px;color:#922b21;line-height:1.5;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -110,22 +126,50 @@ body{font-family:system-ui,sans-serif;background:#f2ede4;color:#2a2318;min-heigh
   </div>
 </div>
 
-<!-- USER MODAL -->
+<!-- USER MODAL (tabbed: Neu anlegen / Verwalten) -->
 <div class="overlay" id="userModal">
   <div class="modal">
     <button class="mc" onclick="closeModal('userModal')">&#x2715;</button>
-    <div class="mh">Neuer Nutzer</div>
-    <div class="info-box">
-      <strong>Hinweis zur Datenspeicherung:</strong><br>
-      Termine und Nutzer werden nur lokal in <em>diesem Browser</em> gespeichert.
-      Andere Personen sehen diese Daten <strong>nicht</strong>, auch wenn sie dieselbe HTML-Datei &ouml;ffnen.
-      F&uuml;r gemeinsam geteilte Termine ben&ouml;tigt man einen Server im Hintergrund.
+    <div class="mh" style="margin-bottom:14px">Nutzerverwaltung</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('tabNew',this)">Neu anlegen</button>
+      <button class="modal-tab" onclick="switchTab('tabManage',this)">Verwalten</button>
     </div>
-    <span class="lbl" style="margin-top:4px">NAME</span>
-    <input class="inp" type="text" id="userName" placeholder="Dein Name ..." style="margin-bottom:12px" onkeydown="if(event.key==='Enter')saveUser()">
+
+    <!-- Tab: Neu anlegen -->
+    <div class="tab-pane active" id="tabNew">
+      <div class="info-box">
+        <strong>Hinweis:</strong> Daten werden nur lokal in <em>diesem Browser</em> gespeichert &ndash; andere Nutzer sehen sie nicht.
+      </div>
+      <span class="lbl">NAME</span>
+      <input class="inp" type="text" id="userName" placeholder="Dein Name ..." style="margin-bottom:12px" onkeydown="if(event.key==='Enter')saveUser()">
+      <span class="lbl">FARBE</span>
+      <div class="color-row" id="colorRow"></div>
+      <button class="btn" style="background:#1e1a14" onclick="saveUser()">Nutzer anlegen</button>
+    </div>
+
+    <!-- Tab: Verwalten -->
+    <div class="tab-pane" id="tabManage">
+      <div id="userList"></div>
+      <div id="noUsersHint" style="font-size:13px;color:#aaa;text-align:center;padding:20px 0">Noch keine Nutzer angelegt.</div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="overlay" id="editUserModal">
+  <div class="modal">
+    <button class="mc" onclick="closeModal('editUserModal')">&#x2715;</button>
+    <div class="mh" style="margin-bottom:16px">Nutzer bearbeiten</div>
+    <span class="lbl">NAME</span>
+    <input class="inp" type="text" id="editUserName" placeholder="Name ..." style="margin-bottom:12px" onkeydown="if(event.key==='Enter')saveEditUser()">
     <span class="lbl">FARBE</span>
-    <div class="color-row" id="colorRow"></div>
-    <button class="btn" style="background:#1e1a14" onclick="saveUser()">Nutzer anlegen</button>
+    <div class="color-row" id="editColorRow"></div>
+    <button class="btn" style="background:#1e1a14;margin-bottom:8px" onclick="saveEditUser()">Speichern</button>
+    <div class="warn-box" id="editWarnBox" style="display:none">
+      Wenn du diesen Nutzer l&ouml;schst, werden auch alle seine Termine entfernt. Wirklich l&ouml;schen?
+    </div>
+    <button class="btn" style="background:#c0392b" onclick="confirmDeleteUser()">Nutzer l&ouml;schen</button>
   </div>
 </div>
 
@@ -255,6 +299,12 @@ function renderHeader() {
         activeId = (activeId === u.id) ? null : u.id;
         persist(); renderHeader(); renderCalendar();
       };
+      var editBtn = document.createElement('button');
+      editBtn.className = 'chip-edit';
+      editBtn.title = 'Bearbeiten';
+      editBtn.innerHTML = '&#9998;';
+      editBtn.onclick = function(e) { e.stopPropagation(); openEditUserModal(u.id); };
+      chip.appendChild(editBtn);
       bar.appendChild(chip);
     })(users[i]);
   }
@@ -550,33 +600,60 @@ function deleteCurrentEvent() {
   renderCalendar();
 }
 
+// ---- tab switching ----
+function switchTab(tabId, btn) {
+  var panes = document.querySelectorAll('.tab-pane');
+  for (var i = 0; i < panes.length; i++) panes[i].classList.remove('active');
+  document.getElementById(tabId).classList.add('active');
+  var tabs = document.querySelectorAll('.modal-tab');
+  for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+  btn.classList.add('active');
+  if (tabId === 'tabManage') renderUserList();
+}
+
+// ---- user list (manage tab) ----
+function renderUserList() {
+  var list = document.getElementById('userList');
+  var hint = document.getElementById('noUsersHint');
+  list.innerHTML = '';
+  if (users.length === 0) { hint.style.display = 'block'; return; }
+  hint.style.display = 'none';
+  for (var i = 0; i < users.length; i++) {
+    (function(u) {
+      var item = document.createElement('div');
+      item.className = 'user-list-item';
+
+      var dot = document.createElement('div');
+      dot.className = 'user-list-dot';
+      dot.style.background = u.color;
+
+      var name = document.createElement('div');
+      name.className = 'user-list-name';
+      name.textContent = u.name;
+
+      var evCount = 0;
+      for (var k = 0; k < events.length; k++) if (events[k].userId === u.id) evCount++;
+      var cnt = document.createElement('div');
+      cnt.style.cssText = 'font-size:11px;color:#aaa;flex-shrink:0';
+      cnt.textContent = evCount + ' Termin' + (evCount !== 1 ? 'e' : '');
+
+      var editBtn = document.createElement('button');
+      editBtn.className = 'user-list-btn';
+      editBtn.textContent = 'Bearbeiten';
+      editBtn.onclick = function() { closeModal('userModal'); openEditUserModal(u.id); };
+
+      item.appendChild(dot); item.appendChild(name); item.appendChild(cnt); item.appendChild(editBtn);
+      list.appendChild(item);
+    })(users[i]);
+  }
+}
+
 // ---- user modal ----
 function openUserModal() {
-  var used = users.map(function(u){ return u.color; });
-  var pool = PALETTE.filter(function(c){ return used.indexOf(c) < 0; });
-  var cp   = pool.length > 0 ? pool : PALETTE;
-  selColor = cp[0];
-
-  var row = document.getElementById('colorRow');
-  row.innerHTML = '';
-  (function(cp2) {
-    for (var i = 0; i < cp2.length; i++) {
-      (function(c) {
-        var sw = document.createElement('div');
-        sw.className = 'swatch' + (c === selColor ? ' sel' : '');
-        sw.style.background = c;
-        sw.onclick = function() {
-          selColor = c;
-          var all = document.querySelectorAll('.swatch');
-          for (var j=0;j<all.length;j++) all[j].classList.remove('sel');
-          sw.classList.add('sel');
-        };
-        row.appendChild(sw);
-      })(cp2[i]);
-    }
-  })(cp);
-
+  buildColorPicker('colorRow', selColor, function(c){ selColor = c; });
   document.getElementById('userName').value = '';
+  // reset to first tab
+  switchTab('tabNew', document.querySelector('.modal-tab'));
   document.getElementById('userModal').classList.add('open');
   setTimeout(function(){ document.getElementById('userName').focus(); }, 50);
 }
@@ -591,6 +668,76 @@ function saveUser() {
   closeModal('userModal');
   renderHeader();
   renderCalendar();
+}
+
+// ---- edit user modal ----
+var editUserId = null;
+var editSelColor = PALETTE[0];
+var deleteConfirmPending = false;
+
+function openEditUserModal(uid) {
+  editUserId = uid;
+  deleteConfirmPending = false;
+  var u = getUserById(uid);
+  if (!u) return;
+  editSelColor = u.color;
+  document.getElementById('editUserName').value = u.name;
+  document.getElementById('editWarnBox').style.display = 'none';
+  buildColorPicker('editColorRow', editSelColor, function(c){ editSelColor = c; });
+  document.getElementById('editUserModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('editUserName').focus(); }, 50);
+}
+
+function saveEditUser() {
+  var name = document.getElementById('editUserName').value.trim();
+  if (!name || !editUserId) return;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].id === editUserId) {
+      users[i].name  = name;
+      users[i].color = editSelColor;
+      break;
+    }
+  }
+  persist();
+  closeModal('editUserModal');
+  renderHeader();
+  renderCalendar();
+}
+
+function confirmDeleteUser() {
+  if (!deleteConfirmPending) {
+    deleteConfirmPending = true;
+    document.getElementById('editWarnBox').style.display = 'block';
+    return;
+  }
+  // confirmed – delete user and their events
+  events = events.filter(function(e){ return e.userId !== editUserId; });
+  users  = users.filter(function(u){ return u.id !== editUserId; });
+  if (activeId === editUserId) activeId = users.length > 0 ? users[0].id : null;
+  persist();
+  closeModal('editUserModal');
+  renderHeader();
+  renderCalendar();
+}
+
+// ---- shared colour picker builder ----
+function buildColorPicker(rowId, current, onSelect) {
+  var row = document.getElementById(rowId);
+  row.innerHTML = '';
+  for (var i = 0; i < PALETTE.length; i++) {
+    (function(c) {
+      var sw = document.createElement('div');
+      sw.className = 'swatch' + (c === current ? ' sel' : '');
+      sw.style.background = c;
+      sw.onclick = function() {
+        onSelect(c);
+        var all = row.querySelectorAll('.swatch');
+        for (var j = 0; j < all.length; j++) all[j].classList.remove('sel');
+        sw.classList.add('sel');
+      };
+      row.appendChild(sw);
+    })(PALETTE[i]);
+  }
 }
 
 // ---- utils ----
