@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalender 2026 – Baden-Württemberg</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f2ede4;color:#2a2318;min-height:100vh}
+#header{background:#1e1a14;color:#f2ede4;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+#header h1{font-size:20px;font-weight:700;letter-spacing:-.5px}
+#header h1 span{color:#c8a870}
+#header small{font-size:11px;color:#888;display:block;margin-top:1px}
+#userBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.user-chip{display:flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:999px;border:2px solid transparent;cursor:pointer;font-size:12px;color:#eee;background:rgba(255,255,255,.05);transition:all .15s;user-select:none}
+.user-chip.active{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.45)}
+.chip-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.btn-add-user{padding:4px 12px;border-radius:999px;border:2px dashed rgba(255,255,255,.28);background:transparent;color:#bbb;cursor:pointer;font-size:12px;font-family:inherit}
+#legend{background:#fffcf6;border-bottom:1px solid #ddd5c4;padding:8px 24px;display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#7a6f60;align-items:center}
+.leg{display:flex;align-items:center;gap:5px}
+.leg-sq{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.leg-bar{width:22px;height:8px;border-radius:4px;flex-shrink:0}
+#yearGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;padding:20px 24px;max-width:1600px;margin:0 auto}
+.month-card{background:#fffcf6;border-radius:10px;border:1px solid #ddd5c4;overflow:hidden;box-shadow:0 2px 10px rgba(42,35,24,.07)}
+.month-head{background:#1e1a14;color:#f2ede4;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px}
+.month-head small{font-size:10px;color:#777;font-weight:400}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);background:#ede8de;border-bottom:1px solid #ddd5c4}
+.dow-lbl{text-align:center;padding:4px 0;font-size:9px;font-weight:700;color:#7a6f60;letter-spacing:.4px}
+.dow-lbl.we{color:#b85c2a}
+.week-row{display:grid;grid-template-columns:repeat(7,1fr);position:relative;border-bottom:1px solid #ddd5c4}
+.week-row.last-row{border-bottom:none}
+.day-cell{position:relative;cursor:default;transition:filter .1s;user-select:none;background:#fffcf6}
+.day-cell.empty{background:#ede8de}
+.day-cell.we{background:#e8e0d5}
+.day-cell.holiday{background:#fdecea}
+.day-cell.vacation{background:#e8f4fb}
+.day-cell.clickable:hover{filter:brightness(.93)}
+.br{border-right:1px solid #ddd5c4}
+.day-top{padding:4px 5px 0;display:flex;align-items:center;gap:3px;min-height:22px}
+.day-num{font-size:10px;font-weight:500;color:#2a2318;line-height:1;flex-shrink:0}
+.day-num.we{color:#b85c2a}
+.day-num.hol{color:#c0392b;font-weight:700}
+.day-num.tod{background:#b85c2a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.hol-lbl{font-size:8px;color:#c0392b;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1}
+.vac-lbl{font-size:7px;color:#2980b9;font-weight:600;overflow:hidden;white-space:nowrap;flex:1}
+.ev-bar{position:absolute;height:13px;display:flex;align-items:center;overflow:hidden;cursor:pointer;transition:filter .12s;z-index:10;box-sizing:border-box}
+.ev-bar:hover{filter:brightness(.88)}
+.ev-bar-txt{font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1}
+.overlay{display:none;position:fixed;inset:0;background:rgba(30,26,20,.6);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:#fffcf6;border-radius:14px;padding:22px;width:400px;max-width:100%;position:relative;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.28)}
+.mc{position:absolute;top:12px;right:12px;background:none;border:none;font-size:17px;cursor:pointer;color:#aaa;line-height:1}
+.mh{font-size:16px;font-weight:700;margin-bottom:4px}
+.lbl{font-size:10px;font-weight:700;color:#888;letter-spacing:.6px;margin-bottom:4px;display:block}
+.inp{padding:7px 9px;border:1.5px solid #ddd5c4;border-radius:7px;font-size:13px;font-family:inherit;background:#f8f4ee;color:#2a2318;outline:none;width:100%}
+.inp:focus{border-color:#b85c2a}
+.btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff;margin-top:4px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.color-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}
+.swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .1s}
+.swatch.sel{border-color:#1e1a14;transform:scale(1.18)}
+.info-box{background:#e8f4fb;border:1px solid #aad4ec;border-radius:8px;padding:10px 12px;font-size:11px;color:#1a5276;line-height:1.5;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>Kalender 2026 &middot; <span>Baden-W&uuml;rttemberg</span></h1>
+    <small>Feiertage &amp; Schulferien BW</small>
+  </div>
+  <div id="userBar"></div>
+</div>
+
+<div id="legend">
+  <div class="leg"><div class="leg-sq" style="background:#fdecea;border:1.5px solid #c0392b"></div>Feiertag BW</div>
+  <div class="leg"><div class="leg-sq" style="background:#e8f4fb;border:1.5px solid #2980b9"></div>Schulferien BW</div>
+  <div class="leg"><div class="leg-sq" style="background:#e8e0d5;border:1.5px solid #b8a898"></div>Wochenende</div>
+  <div id="userLegend" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+  <div id="activeLbl" style="display:none;font-size:11px;font-style:italic"></div>
+</div>
+
+<div id="yearGrid"></div>
+
+<!-- ADD MODAL -->
+<div class="overlay" id="addModal">
+  <div class="modal">
+    <button class="mc" onclick="closeModal('addModal')">&#x2715;</button>
+    <div class="mh" id="addTitle">Neuer Termin</div>
+    <div style="font-size:11px;color:#888;margin-bottom:14px">Zeitraum und Beschreibung eingeben</div>
+    <div class="dgrid">
+      <div><span class="lbl">STARTDATUM</span><input class="inp" type="date" id="evStart" min="2026-01-01" max="2026-12-31" oninput="updateDur()"></div>
+      <div><span class="lbl">ENDDATUM</span><input class="inp" type="date" id="evEnd" min="2026-01-01" max="2026-12-31" oninput="updateDur()"></div>
+    </div>
+    <span class="lbl">TERMINBESCHREIBUNG</span>
+    <input class="inp" type="text" id="evText" placeholder="z. B. Urlaub, Meeting, Geburtstag ..." style="margin-bottom:8px" onkeydown="if(event.key==='Enter')saveEvent()">
+    <div id="durNote" style="font-size:11px;color:#888;margin-bottom:10px;min-height:16px"></div>
+    <button class="btn" id="addEvBtn" onclick="saveEvent()">Termin eintragen</button>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailModal">
+  <div class="modal">
+    <button class="mc" onclick="closeModal('detailModal')">&#x2715;</button>
+    <div class="mh" id="dtTitle"></div>
+    <div id="dtMeta" style="font-size:12px;color:#888;margin-bottom:6px"></div>
+    <div id="dtDates" style="font-size:13px;color:#555;margin-bottom:16px"></div>
+    <button class="btn" style="background:#c0392b" onclick="deleteCurrentEvent()">Termin l&ouml;schen</button>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="overlay" id="userModal">
+  <div class="modal">
+    <button class="mc" onclick="closeModal('userModal')">&#x2715;</button>
+    <div class="mh">Neuer Nutzer</div>
+    <div class="info-box">
+      <strong>Hinweis zur Datenspeicherung:</strong><br>
+      Termine und Nutzer werden nur lokal in <em>diesem Browser</em> gespeichert.
+      Andere Personen sehen diese Daten <strong>nicht</strong>, auch wenn sie dieselbe HTML-Datei &ouml;ffnen.
+      F&uuml;r gemeinsam geteilte Termine ben&ouml;tigt man einen Server im Hintergrund.
+    </div>
+    <span class="lbl" style="margin-top:4px">NAME</span>
+    <input class="inp" type="text" id="userName" placeholder="Dein Name ..." style="margin-bottom:12px" onkeydown="if(event.key==='Enter')saveUser()">
+    <span class="lbl">FARBE</span>
+    <div class="color-row" id="colorRow"></div>
+    <button class="btn" style="background:#1e1a14" onclick="saveUser()">Nutzer anlegen</button>
+  </div>
+</div>
+
+<script>
+var MONTHS = ['Januar','Februar','M\u00e4rz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+var DAY_LABELS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+
+var HOLIDAYS = {
+  '2026-01-01':'Neujahr',
+  '2026-01-06':'Heilige Drei K\u00f6nige',
+  '2026-04-03':'Karfreitag',
+  '2026-04-05':'Ostersonntag',
+  '2026-04-06':'Ostermontag',
+  '2026-05-01':'Tag der Arbeit',
+  '2026-05-14':'Christi Himmelfahrt',
+  '2026-05-24':'Pfingstsonntag',
+  '2026-05-25':'Pfingstmontag',
+  '2026-06-04':'Fronleichnam',
+  '2026-10-03':'Tag d. Dt. Einheit',
+  '2026-11-01':'Allerheiligen',
+  '2026-12-25':'1. Weihnachtstag',
+  '2026-12-26':'2. Weihnachtstag'
+};
+
+var VACATIONS = [
+  {name:'Winterferien',    start:'2026-01-05', end:'2026-01-09'},
+  {name:'Osterferien',     start:'2026-04-07', end:'2026-04-18'},
+  {name:'Pfingstferien',   start:'2026-05-26', end:'2026-06-06'},
+  {name:'Sommerferien',    start:'2026-07-30', end:'2026-09-12'},
+  {name:'Herbstferien',    start:'2026-10-26', end:'2026-10-30'},
+  {name:'Weihnachtsferien',start:'2026-12-23', end:'2027-01-06'}
+];
+
+var PALETTE = [
+  '#e74c3c','#e67e22','#d4ac0d','#27ae60','#1abc9c',
+  '#2980b9','#8e44ad','#c0392b','#16a085','#d35400','#2471a3','#117a65'
+];
+
+// ---- state ----
+var users    = lsGet('cal26_users',  []);
+var events   = lsGet('cal26_events', []);
+var activeId = lsGet('cal26_active', null);
+var currentEvId = null;
+var selColor = PALETTE[0];
+
+function lsGet(k, def) {
+  try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch(e) { return def; }
+}
+function lsSet(k, v) {
+  try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
+}
+function persist() {
+  lsSet('cal26_users', users);
+  lsSet('cal26_events', events);
+  lsSet('cal26_active', activeId);
+}
+
+// ---- date helpers ----
+function dk(y, m, d) {
+  return y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+}
+function pd(s) { return new Date(s + 'T00:00:00'); }
+function cmp(a, b) { return pd(a) - pd(b); }
+function minK(a, b) { return cmp(a,b) <= 0 ? a : b; }
+function maxK(a, b) { return cmp(a,b) >= 0 ? a : b; }
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+function firstDow(y, m) { var d = new Date(y, m-1, 1).getDay(); return d === 0 ? 6 : d - 1; }
+function fmtDate(k) {
+  var parts = k.split('-');
+  return parseInt(parts[2]) + '. ' + MONTHS[parseInt(parts[1])-1] + ' ' + parts[0];
+}
+
+var today = new Date();
+var TODAY_KEY = dk(today.getFullYear(), today.getMonth()+1, today.getDate());
+
+function getVac(key) {
+  var d = pd(key);
+  for (var i = 0; i < VACATIONS.length; i++) {
+    if (d >= pd(VACATIONS[i].start) && d <= pd(VACATIONS[i].end)) return VACATIONS[i].name;
+  }
+  return null;
+}
+
+// ---- colour helpers ----
+function hexRgb(h) {
+  return { r: parseInt(h.slice(1,3),16), g: parseInt(h.slice(3,5),16), b: parseInt(h.slice(5,7),16) };
+}
+function lum(c) { return 0.299*c.r + 0.587*c.g + 0.114*c.b; }
+function txtOn(h) { return lum(hexRgb(h)) > 140 ? '#1a1a1a' : '#ffffff'; }
+function lighten(h, p) {
+  var c = hexRgb(h), f = p/100;
+  return 'rgb(' + Math.round(c.r+(255-c.r)*f) + ',' + Math.round(c.g+(255-c.g)*f) + ',' + Math.round(c.b+(255-c.b)*f) + ')';
+}
+
+// ---- slot assignment ----
+function assignSlots(evs) {
+  var slots = {}, taken = [];
+  var sorted = evs.slice().sort(function(a,b){ return cmp(a.start, b.start); });
+  for (var i = 0; i < sorted.length; i++) {
+    var ev = sorted[i], slot = 0;
+    while (taken[slot] && taken[slot].some(function(id) {
+      var o = null;
+      for (var j=0;j<evs.length;j++) if(evs[j].id===id){o=evs[j];break;}
+      return o && cmp(o.start, ev.end) <= 0 && cmp(o.end, ev.start) >= 0;
+    })) slot++;
+    if (!taken[slot]) taken[slot] = [];
+    taken[slot].push(ev.id);
+    slots[ev.id] = slot;
+  }
+  return slots;
+}
+
+// ---- render header ----
+function renderHeader() {
+  var bar = document.getElementById('userBar');
+  bar.innerHTML = '';
+  for (var i = 0; i < users.length; i++) {
+    (function(u) {
+      var chip = document.createElement('div');
+      chip.className = 'user-chip' + (activeId === u.id ? ' active' : '');
+      var dot = document.createElement('div');
+      dot.className = 'chip-dot';
+      dot.style.background = u.color;
+      chip.appendChild(dot);
+      chip.appendChild(document.createTextNode(u.name));
+      chip.onclick = function() {
+        activeId = (activeId === u.id) ? null : u.id;
+        persist(); renderHeader(); renderCalendar();
+      };
+      bar.appendChild(chip);
+    })(users[i]);
+  }
+  var btn = document.createElement('button');
+  btn.className = 'btn-add-user';
+  btn.textContent = '+ Nutzer';
+  btn.onclick = openUserModal;
+  bar.appendChild(btn);
+
+  var ul = document.getElementById('userLegend');
+  ul.innerHTML = '';
+  for (var j = 0; j < users.length; j++) {
+    var leg = document.createElement('div');
+    leg.className = 'leg';
+    var bar2 = document.createElement('div');
+    bar2.className = 'leg-bar';
+    bar2.style.background = users[j].color;
+    leg.appendChild(bar2);
+    leg.appendChild(document.createTextNode(users[j].name));
+    ul.appendChild(leg);
+  }
+
+  var al = document.getElementById('activeLbl');
+  var au = null;
+  for (var k = 0; k < users.length; k++) if (users[k].id === activeId) { au = users[k]; break; }
+  if (au) {
+    al.style.display = 'block';
+    al.textContent = 'Aktiv: ' + au.name + ' \u2014 Tag anklicken zum Eintragen';
+    al.style.color = au.color;
+  } else {
+    al.style.display = 'none';
+  }
+}
+
+// ---- render calendar ----
+function renderCalendar() {
+  var g = document.getElementById('yearGrid');
+  g.innerHTML = '';
+  for (var m = 1; m <= 12; m++) g.appendChild(buildMonth(m));
+}
+
+var BH = 13, BG = 2, TOFF = 22, TPAD = 4;
+
+function buildMonth(m) {
+  var total = daysInMonth(2026, m);
+  var offset = firstDow(2026, m);
+  var rows = Math.ceil((offset + total) / 7);
+
+  var card = document.createElement('div');
+  card.className = 'month-card';
+
+  var head = document.createElement('div');
+  head.className = 'month-head';
+  head.appendChild(document.createTextNode(MONTHS[m-1]));
+  var sm = document.createElement('small');
+  sm.textContent = '2026';
+  head.appendChild(sm);
+  card.appendChild(head);
+
+  var dr = document.createElement('div');
+  dr.className = 'dow-row';
+  for (var i = 0; i < DAY_LABELS.length; i++) {
+    var dl = document.createElement('div');
+    dl.className = 'dow-lbl' + (i >= 5 ? ' we' : '');
+    dl.textContent = DAY_LABELS[i];
+    dr.appendChild(dl);
+  }
+  card.appendChild(dr);
+
+  var mFirst = dk(2026, m, 1), mLast = dk(2026, m, total);
+  var mEvs = events.filter(function(ev) {
+    return cmp(ev.start, mLast) <= 0 && cmp(ev.end, mFirst) >= 0;
+  });
+
+  for (var r = 0; r < rows; r++) {
+    var week = [];
+    for (var c = 0; c < 7; c++) {
+      var ci = r*7+c, dn = ci - offset + 1;
+      week.push((dn >= 1 && dn <= total) ? dk(2026, m, dn) : null);
+    }
+    card.appendChild(buildWeekRow(week, mEvs, r === rows-1));
+  }
+  return card;
+}
+
+function getUserById(id) {
+  for (var i = 0; i < users.length; i++) if (users[i].id === id) return users[i];
+  return null;
+}
+
+function buildWeekRow(week, allEvs, isLast) {
+  var vk = week.filter(function(k){ return k !== null; });
+  if (!vk.length) return document.createElement('div');
+  var wF = vk[0], wL = vk[vk.length-1];
+
+  var wEvs = allEvs.filter(function(ev) {
+    return cmp(ev.start, wL) <= 0 && cmp(ev.end, wF) >= 0;
+  });
+  var slots = assignSlots(wEvs);
+  var maxSlot = -1;
+  for (var sid in slots) if (slots[sid] > maxSlot) maxSlot = slots[sid];
+  var bH = (maxSlot + 1) * (BH + BG);
+  var rowH = Math.max(52, TOFF + TPAD + bH + 4);
+
+  var row = document.createElement('div');
+  row.className = 'week-row' + (isLast ? ' last-row' : '');
+  row.style.minHeight = rowH + 'px';
+
+  for (var ci = 0; ci < 7; ci++) {
+    var key = week[ci];
+    var cell = document.createElement('div');
+    if (ci < 6) cell.classList.add('br');
+
+    if (!key) {
+      cell.classList.add('day-cell', 'empty');
+      row.appendChild(cell);
+      continue;
+    }
+
+    var date = pd(key);
+    var dow = date.getDay();
+    var isWe = (dow === 0 || dow === 6);
+    var holiday = HOLIDAYS[key];
+    var vacation = getVac(key);
+    var isToday = (key === TODAY_KEY);
+    var d = date.getDate();
+    var au = getUserById(activeId);
+
+    cell.className = 'day-cell' +
+      (isWe ? ' we' : '') +
+      (holiday ? ' holiday' : (vacation ? ' vacation' : '')) +
+      (ci < 6 ? ' br' : '') +
+      (au ? ' clickable' : '');
+
+    if (au) {
+      (function(k) {
+        cell.onclick = function() { openAddModal(k); };
+      })(key);
+    }
+
+    var top = document.createElement('div');
+    top.className = 'day-top';
+
+    var num = document.createElement('div');
+    num.textContent = d;
+    if (isToday)      num.className = 'day-num tod';
+    else if (holiday) num.className = 'day-num hol';
+    else if (isWe)    num.className = 'day-num we';
+    else              num.className = 'day-num';
+    top.appendChild(num);
+
+    if (holiday) {
+      var hl = document.createElement('div');
+      hl.className = 'hol-lbl';
+      hl.textContent = holiday;
+      top.appendChild(hl);
+    } else if (vacation && ci === 0) {
+      var vl = document.createElement('div');
+      vl.className = 'vac-lbl';
+      vl.textContent = vacation;
+      top.appendChild(vl);
+    }
+    cell.appendChild(top);
+    row.appendChild(cell);
+  }
+
+  // event bars
+  for (var ei = 0; ei < wEvs.length; ei++) {
+    (function(ev) {
+      var slot = slots[ev.id] || 0;
+      var u = getUserById(ev.userId);
+      var color = u ? u.color : '#888';
+
+      var effS = maxK(ev.start, wF);
+      var effE = minK(ev.end, wL);
+      var cS = week.indexOf(effS);
+      var cE = week.indexOf(effE);
+      if (cS < 0 || cE < 0) return;
+
+      var isS = (ev.start === effS);
+      var isE = (ev.end === effE);
+      var isSingle = (ev.start === ev.end && isS && isE);
+
+      var topPx = TOFF + TPAD + slot * (BH + BG);
+      var lPct  = (cS / 7) * 100;
+      var wPct  = ((cE - cS + 1) / 7) * 100;
+      var padL  = isS ? 6 : 2;
+      var padR  = isE ? 6 : 2;
+      var lOff  = isS ? 2 : 0;
+      var rOff  = isE ? 2 : 0;
+
+      var br;
+      if (isSingle)     br = '6px';
+      else if (isS&&isE)br = '6px';
+      else if (isS)     br = '6px 0 0 6px';
+      else if (isE)     br = '0 6px 6px 0';
+      else              br = '0';
+
+      var bgColor  = isSingle ? color : lighten(color, 70);
+      var leftBorder = (!isS) ? ('3px solid ' + color) : 'none';
+
+      var bar = document.createElement('div');
+      bar.className = 'ev-bar';
+      bar.style.top         = topPx + 'px';
+      bar.style.left        = 'calc(' + lPct + '% + ' + lOff + 'px)';
+      bar.style.width       = 'calc(' + wPct + '% - ' + (lOff + rOff) + 'px)';
+      bar.style.background  = bgColor;
+      bar.style.borderLeft  = leftBorder;
+      bar.style.borderRadius= br;
+      bar.style.paddingLeft = padL + 'px';
+      bar.style.paddingRight= padR + 'px';
+      bar.title = (u ? u.name : '?') + ': ' + ev.text;
+
+      bar.onclick = function(e) { e.stopPropagation(); openDetailModal(ev); };
+
+      if (isS || cS === 0) {
+        var txt = document.createElement('span');
+        txt.className = 'ev-bar-txt';
+        txt.textContent = ev.text;
+        txt.style.color = isSingle ? txtOn(color) : color;
+        bar.appendChild(txt);
+      }
+      row.appendChild(bar);
+    })(wEvs[ei]);
+  }
+
+  return row;
+}
+
+// ---- add modal ----
+function openAddModal(key) {
+  var au = getUserById(activeId);
+  if (!au) return;
+
+  var titleEl = document.getElementById('addTitle');
+  titleEl.innerHTML = '';
+  var dot = document.createElement('span');
+  dot.style.cssText = 'display:inline-block;width:10px;height:10px;border-radius:50%;background:' + au.color + ';margin-right:8px;vertical-align:middle;flex-shrink:0';
+  titleEl.appendChild(dot);
+  titleEl.appendChild(document.createTextNode('Neuer Termin \u00b7 ' + au.name));
+
+  document.getElementById('evStart').value = key;
+  document.getElementById('evEnd').value   = key;
+  document.getElementById('evText').value  = '';
+  document.getElementById('addEvBtn').style.background = au.color;
+  updateDur();
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('evText').focus(); }, 50);
+}
+
+function updateDur() {
+  var s = document.getElementById('evStart').value;
+  var e = document.getElementById('evEnd').value;
+  var note = document.getElementById('durNote');
+  if (s && e) {
+    var days = Math.round((pd(maxK(s,e)) - pd(minK(s,e))) / 86400000) + 1;
+    note.textContent = 'Dauer: ' + days + (days > 1 ? ' Tage' : ' Tag');
+  } else {
+    note.textContent = '';
+  }
+}
+
+function saveEvent() {
+  var au = getUserById(activeId);
+  if (!au) return;
+  var s = document.getElementById('evStart').value;
+  var e = document.getElementById('evEnd').value;
+  var t = document.getElementById('evText').value.trim();
+  if (!s || !e || !t) return;
+  events.push({ id: 'ev' + Date.now(), userId: au.id, text: t, start: minK(s,e), end: maxK(s,e) });
+  persist();
+  closeModal('addModal');
+  renderCalendar();
+}
+
+// ---- detail modal ----
+function openDetailModal(ev) {
+  currentEvId = ev.id;
+  var u = getUserById(ev.userId);
+  document.getElementById('dtTitle').textContent = ev.text;
+  document.getElementById('dtMeta').textContent  = u ? u.name : 'Unbekannt';
+  var dates = (ev.start === ev.end)
+    ? fmtDate(ev.start)
+    : fmtDate(ev.start) + ' \u2013 ' + fmtDate(ev.end);
+  document.getElementById('dtDates').textContent = dates;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function deleteCurrentEvent() {
+  events = events.filter(function(e){ return e.id !== currentEvId; });
+  persist();
+  closeModal('detailModal');
+  renderCalendar();
+}
+
+// ---- user modal ----
+function openUserModal() {
+  var used = users.map(function(u){ return u.color; });
+  var pool = PALETTE.filter(function(c){ return used.indexOf(c) < 0; });
+  var cp   = pool.length > 0 ? pool : PALETTE;
+  selColor = cp[0];
+
+  var row = document.getElementById('colorRow');
+  row.innerHTML = '';
+  (function(cp2) {
+    for (var i = 0; i < cp2.length; i++) {
+      (function(c) {
+        var sw = document.createElement('div');
+        sw.className = 'swatch' + (c === selColor ? ' sel' : '');
+        sw.style.background = c;
+        sw.onclick = function() {
+          selColor = c;
+          var all = document.querySelectorAll('.swatch');
+          for (var j=0;j<all.length;j++) all[j].classList.remove('sel');
+          sw.classList.add('sel');
+        };
+        row.appendChild(sw);
+      })(cp2[i]);
+    }
+  })(cp);
+
+  document.getElementById('userName').value = '';
+  document.getElementById('userModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('userName').focus(); }, 50);
+}
+
+function saveUser() {
+  var name = document.getElementById('userName').value.trim();
+  if (!name) return;
+  var id = 'u' + Date.now();
+  users.push({ id: id, name: name, color: selColor });
+  activeId = id;
+  persist();
+  closeModal('userModal');
+  renderHeader();
+  renderCalendar();
+}
+
+// ---- utils ----
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+var overlays = document.querySelectorAll('.overlay');
+for (var oi = 0; oi < overlays.length; oi++) {
+  (function(o) {
+    o.addEventListener('click', function(e){ if (e.target === o) o.classList.remove('open'); });
+  })(overlays[oi]);
+}
+
+// ---- init ----
+renderHeader();
+renderCalendar();
+</script>
+</body>
+</html>
